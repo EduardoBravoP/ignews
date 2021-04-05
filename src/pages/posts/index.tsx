@@ -2,9 +2,21 @@ import { GetStaticProps } from 'next';
 import Head from 'next/head';
 import Prismic from '@prismicio/client'
 import { getPrismicClient } from '../../services/prismic';
+import { RichText } from 'prismic-dom'
 import styles from './styles.module.scss';
 
-export default function Posts() {
+type Post = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  updatedAt: string;
+}
+
+interface PostsProps {
+  posts: Post[];
+}
+
+export default function Posts({ posts }: PostsProps) {
   return (
     <>
       <Head>
@@ -13,27 +25,13 @@ export default function Posts() {
 
       <main className={styles.container}>
         <div className={styles.posts}>
-          <a href="#">
-            <time>12 de março de 2021</time>
-            <strong>Creating monorepo</strong>
-            <p>At the recent Google I/O 2019, when Google announced an epidemic widespread of Dark Theme,   I was super pumped. For those of you who follow me on social media, you might know that I am a hardcore fan of Dark Theme. I just love it!
-              With Android Q coming out in the 3rd Quarter of 2019, I felt that it was important for everyone to get the Dark Theme ready for their apps.
-              Google has released the Material Guidelines for applying Dark Theme to your apps. The documentation is excellent unlike the Human Interface Guidelines by Apple. (Why Apple? Why?). Anyway, you can definitely spend time reading that, but I plan to make your life a lot easier with a step by step process.</p>
-          </a>
-          <a href="#">
-            <time>12 de março de 2021</time>
-            <strong>Creating monorepo</strong>
-            <p>At the recent Google I/O 2019, when Google announced an epidemic widespread of Dark Theme,   I was super pumped. For those of you who follow me on social media, you might know that I am a hardcore fan of Dark Theme. I just love it!
-              With Android Q coming out in the 3rd Quarter of 2019, I felt that it was important for everyone to get the Dark Theme ready for their apps.
-              Google has released the Material Guidelines for applying Dark Theme to your apps. The documentation is excellent unlike the Human Interface Guidelines by Apple. (Why Apple? Why?). Anyway, you can definitely spend time reading that, but I plan to make your life a lot easier with a step by step process.</p>
-          </a>
-          <a href="#">
-            <time>12 de março de 2021</time>
-            <strong>Creating monorepo</strong>
-            <p>At the recent Google I/O 2019, when Google announced an epidemic widespread of Dark Theme,   I was super pumped. For those of you who follow me on social media, you might know that I am a hardcore fan of Dark Theme. I just love it!
-              With Android Q coming out in the 3rd Quarter of 2019, I felt that it was important for everyone to get the Dark Theme ready for their apps.
-              Google has released the Material Guidelines for applying Dark Theme to your apps. The documentation is excellent unlike the Human Interface Guidelines by Apple. (Why Apple? Why?). Anyway, you can definitely spend time reading that, but I plan to make your life a lot easier with a step by step process.</p>
-          </a>
+          {posts.map(post => (
+            <a key={post.slug} href="#">
+              <time>{post.updatedAt}</time>
+              <strong>{post.title}</strong>
+              <p>{post.excerpt}</p>
+            </a>
+          ))}
         </div>
       </main>
     </>
@@ -50,9 +48,22 @@ export const getStaticProps: GetStaticProps = async () => {
     pageSize: 100,
   })
 
-  console.log(response)
+  const posts = response.results.map(post => {
+    return {
+      slug: post.uid,
+      title: RichText.asText(post.data.title),
+      excerpt: post.data.content.find(content => content.type === 'paragraph')?.text ?? '',
+      updatedAt: new Date(post.last_publication_date).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      })
+    }
+  })
 
   return {
-    props: {}
+    props: {
+      posts
+    }
   }
 }
